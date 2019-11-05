@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd">
+
+
+    <!--
+        扫描包  扫描指定包以及它下面的所有子包中加了@Controller @Service @Repository @Component四种注解之一的类
+            创建对象，默认以首字母小写的类名称作为键，保存到Spring容器中
+    -->
+    <context:component-scan base-package="cn.itsource.ibs.service" />
+
+
+    <!-- 导入properties文件 -->
+    <context:property-placeholder location="classpath:dbcp.properties" />
+    <!-- 配置连接池 -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClassName" value="${jdbc.driverClassName}" />
+        <property name="url" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+    </bean>
+
+    <!-- 配置EntityManagerFactory【使用FactoryBean方式配置】 -->
+    <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <!-- 2.从哪个包去扫描@Entity，domain包 -->
+        <!-- public void setPackagesToScan(String... packagesToScan) { -->
+        <property name="packagesToScan" value="cn.itsource.ibs.domain" />
+        <!-- 3.配置JPA的实现 -->
+        <!-- private JpaVendorAdapter jpaVendorAdapter; -->
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+                <!-- org.springframework.orm.jpa.vendor.AbstractJpaVendorAdapter -->
+                <!-- private boolean showSql = false;是否显示sql语句 -->
+                <property name="showSql" value="true" />
+                <!-- private boolean generateDdl = false;是否建表 -->
+                <property name="generateDdl" value="false" />
+                <!-- private String databasePlatform;原来方言 -->
+                <property name="databasePlatform" value="org.hibernate.dialect.MySQLDialect" />
+            </bean>
+        </property>
+    </bean>
+
+    <!-- Jpa事务配置[业务增强、切面] -->
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+    </bean>
+    <!--
+        注解声明式事务管理
+            tx:annotation-driven 默认查找id为transactionManager的bean来作为切面增强类
+                如果该bean的id不是transactionManager，则报错：No bean named 'transactionManager'
+            transaction-manager 表示指定事务管理切面增强bean的id
+    -->
+    <tx:annotation-driven transaction-manager="transactionManager" />
+
+    <!-- SpringDataJpa配置 ********************************************-->
+    <!--
+        base-package:扫描的包
+            SpringDataJpa的扫描包，它只负责扫描dao层，SpringDataJpa的dao层只写接口，不写实现类，所以无法在实现类中添加@Repository注解
+            所以不能再使用<context:component-scan方式来扫描包了
+        factory-class="cn.itsource.ibs.factorybean.BaseRepositoryFactoryBean"
+            如果不指定，SpringDataJPA默认使用SimpleJpaRepository作为自动生成的代理类的父类
+    -->
+    <jpa:repositories base-package="cn.itsource.ibs.repository"
+        transaction-manager-ref="transactionManager"
+        entity-manager-factory-ref="entityManagerFactory"
+        factory-class="cn.itsource.ibs.factorybean.BaseRepositoryFactoryBean"/>
+
+
+
+    <!-- 引入Shiro的配置文件 -->
+    <import resource="classpath:spring-shiro.xml"/>
+
+</beans>

@@ -1,0 +1,23 @@
+#*
+注释
+gfdh
+gfdgf
+sdaf
+dsfds
+dsadsads
+*#
+#set($username="admin")
+#set($gender=2)
+大家好，我是$!{name}，我的用户名是$!{username}，我是一个#if($gender==1) 男#elseif($gender==2) 女#end 生
+城市列表：
+#foreach($c in $citys)
+    $!{c}
+#end
+姓名列表：
+#foreach($n in $names)
+    $!{n}
+#end
+Map集合数据：
+#foreach($k in $map.keySet())
+    $!{k} ---> $map.get($k)
+#end
